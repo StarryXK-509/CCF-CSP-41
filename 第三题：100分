@@ -1,0 +1,93 @@
+#include <bits/stdc++.h>
+#define endl '\n'
+#define ll long long
+using namespace std;
+// section[start] = end，记录所有的已被分配的“连续占用区块”
+map<ll, ll> section;
+// lastPos[a] = t，针对每一个队列（由它的起始分配地址a作为唯一标识）记录目前对象最后发送到了哪个地址
+unordered_map<ll, ll> lastPos;
+
+struct Progress {
+    vector<pair<ll,ll>> adapter;
+};
+
+int main(){
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, q;
+    cin >> n >> q;
+    vector<Progress> progresses(n + 1);
+    cin.ignore();
+    
+    for(int i = 0 ; i < q ; ++i){
+        string line;
+        getline(cin, line);
+        stringstream ss(line);
+        string op;
+        ss >> op;
+        if(op == "new"){
+            ll p, L;
+            ss >> p >> L;
+            
+            ll bestStart = -1;
+            ll bestLen = 2e18; // 用极大的数值代表无限大           
+            ll ptr = 0; // 当前游标的起始查找点
+            // 遍历所有已经被占用的区间，考察区间之间的空隙
+            for (auto & k : section) {
+                //k[start] = end，当前区块占用的范围是 [k.first, k.second]
+                ll currentEnd = k.first - 1; // 当前空隙的终点
+                // 如果空隙确实存在（有可能占用块紧贴着游标）
+                if (currentEnd >= ptr) {
+                    ll gap = currentEnd - ptr + 1;
+                    // 满足长度要求，并且比之前找到的更短
+                    if (gap >= L && gap < bestLen) {
+                        bestLen = gap;
+                        bestStart = ptr;
+                    }
+                }
+                // 游标跃过这一个被占用的区块，准备考察下一个空隙
+                ptr = k.second + 1;
+            }
+            if (bestStart == -1) {
+                bestStart = ptr;
+            }
+            // 成功分配最佳坑位，直接插入区间字典
+            section[bestStart] = bestStart + L - 1;
+            progresses[p].adapter.emplace_back(bestStart, bestStart + L - 1);
+            cout << bestStart << endl;
+        }
+        else if(op == "send"){
+            ll p;
+            ss >> p;
+            ll sumOfAddress = 0;
+            // 遍历并更新该进程下所有的队列游标
+            for(auto & k : progresses[p].adapter){
+                ll a = k.first;
+                ll b = k.second;               
+                // 从未发送过 落在 a
+                if(lastPos.find(a) == lastPos.end()){
+                    lastPos[a] = a;
+                }
+                else {
+                    ll t = lastPos[a];
+                    // 落在 t + 1
+                    if(t < b) lastPos[a] = t + 1;
+                    // 拉回 a
+                    else lastPos[a] = a;
+                }
+                sumOfAddress += lastPos[a];
+            }
+            cout << sumOfAddress << endl;
+        }
+        else if(op == "delete"){
+            ll p, i;
+            ss >> p >> i;
+            ll a = progresses[p].adapter[i-1].first;
+            section.erase(a);
+            lastPos.erase(a);
+            progresses[p].adapter.erase(progresses[p].adapter.begin() + i - 1);
+        }
+    }
+    return 0;
+}
