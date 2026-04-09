@@ -1,0 +1,76 @@
+#include <bits/stdc++.h>
+#define endl '\n'
+#define ll long long
+using namespace std;
+//k进制下的异或和
+ll n,m,k;
+//存储f(n)的结果
+unordered_map<ll,ll> F;
+
+ll power(ll a,ll b){
+    long long res=1;
+    while(b){
+        if(b & 1) res = res * a;
+        a = a * a;
+        b >>= 1;
+    }
+    return res;
+}
+
+ll xorSum(ll a,ll b){
+    vector<pair<ll,ll>> A,B;
+    while(a){
+        A.emplace_back(a % k, a / k);
+        a /= k;
+    }
+    while(b){
+        B.emplace_back(b % k, b / k);
+        b /= k;
+    }
+    int n = max(A.size(),B.size());
+    A.resize(n);
+    B.resize(n);
+    ll res = 0;
+    for(int i = 0; i < n; i++){
+        res += (A[i].first + B[i].first) % k * power(k,i);
+    }
+    return res;
+}
+
+ll f(ll n){
+    if(n == 0) return 0;
+    if(F.find(n) != F.end()) return F[n];
+    return F[n] = xorSum(f(n - 1), n);
+}
+
+int main(){
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> n >> m >> k;
+    vector<ll> a(n + 1);
+    for(ll i = 1; i <= n; ++i){
+        cin >> a[i];
+    }
+    for(ll i = 1; i <= m ; ++i){
+        ll t;
+        cin >> t;
+        if(t == 1){
+            ll l,r,v;
+            cin >> l >> r >> v;
+            for(ll j = l; j <= r; ++j){
+                a[j] = xorSum(a[j], v);
+            }
+        }
+        else{
+            ll l,r;
+            cin >> l >> r;
+            ll ans = f(a[l]);
+            for(ll j = l + 1; j <= r; ++j){
+                ans = xorSum(ans, f(a[j]));
+            }
+            cout << ans << endl;
+        }
+    }
+    return 0;
+}
