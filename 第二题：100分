@@ -1,0 +1,62 @@
+#include <bits/stdc++.h>
+#define endl '\n'
+#define ll long long
+using namespace std;
+
+struct Task{
+    int o;
+    double t;
+    int a;
+    double b;
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    //n 和 m，分别表示任务数量和咖啡数量
+    int n,m;
+    double totalTime = 0;
+    cin >> n >> m;
+
+    vector<Task> normal;
+    vector<double> flexible;
+
+    for(int i = 1 ; i <= n ; ++i){
+        Task current;
+        cin >> current.o >> current.t >> current.a >> current.b;
+        totalTime += current.t;
+        //普通型
+        if(current.o == 1){
+            normal.emplace_back(current);
+        }
+        //灵活型
+        else{
+            double perSaved = current.b / (double)current.a;
+            for(int j = 0 ; j < current.a ; ++j)
+                flexible.emplace_back(perSaved);
+        }
+    }
+    //处理普通型，动态规划，dpNomal[i]表示分配i杯咖啡给普通型任务能节省的最大时间
+    vector<double> dpNomal(m + 1);
+    for(int i = 1 ; i <= normal.size() ; ++i){
+        for(int j = m ; j >= normal[i - 1].a ; --j){
+            dpNomal[j] = max(dpNomal[j] , dpNomal[j - normal[i - 1].a] + normal[i - 1].b);
+        } 
+    }
+    //处理灵活型，贪心算法，dpFlexible[i]表示分配i杯咖啡给灵活型任务能节省的最大时间
+    sort(flexible.rbegin(),flexible.rend());
+    vector<double> dpFlexible(m + 1);
+    for(int i = 1 ; i <= m ; ++i){
+        dpFlexible[i] = dpFlexible[i - 1];
+        if(i <= flexible.size())
+            dpFlexible[i] += flexible[i - 1];
+    }
+    //合并，k个咖啡分配给普通，m - k分配给灵活
+    double maxSaved = -1;
+    for(int k = 0 ; k <= m ; ++k){
+        maxSaved = max(maxSaved , dpNomal[k] + dpFlexible[m - k]);
+    }
+
+    cout << fixed << setprecision(6) << totalTime - maxSaved << endl;
+    return 0;
+}
